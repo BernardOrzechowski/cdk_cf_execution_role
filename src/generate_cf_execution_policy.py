@@ -42,11 +42,14 @@ def extract_resource_types(template_file: str) -> set[str]:
     return resource_types
 
 
-def map_resources_to_iam_prefixes(resource_types: set[str]) -> set[str]:
+def map_resources_to_iam_prefixes(
+    resource_types: set[str],
+    mapped_resource_types: dict[CloudFormationResource, IAMServicePrefix],
+) -> set[str]:
     """Map CloudFormation resource types to IAM service prefixes."""
     iam_prefixes: set[str] = set()
     for resource_type in resource_types:
-        iam_prefix = RESOURCE_TO_IAM_PREFIX.get(resource_type)
+        iam_prefix = mapped_resource_types.get(resource_type)
         if iam_prefix:
             iam_prefixes.add(iam_prefix)
     return iam_prefixes
@@ -64,7 +67,10 @@ def validate_resource_types(
     return True
 
 
-def generate_cf_execution_policy(directory_to_scan: str) -> set[str]:
+def generate_cf_execution_policy(
+    directory_to_scan: str,
+    mapped_resource_types: dict[CloudFormationResource, IAMServicePrefix],
+) -> set[str]:
     """Main function to scan directory and generate list of IAM service prefixes."""
     cf_template_files = scan_directory_for_templates(directory_to_scan)
     all_resource_types: set[str] = set()
@@ -72,11 +78,13 @@ def generate_cf_execution_policy(directory_to_scan: str) -> set[str]:
         resource_types = extract_resource_types(cf_template_file)
         all_resource_types.update(resource_types)
 
-    if not validate_resource_types(all_resource_types, RESOURCE_TO_IAM_PREFIX):
+    if not validate_resource_types(all_resource_types, mapped_resource_types):
         raise ValueError(
             "Unrecognized resource types found. Add missing mappings. Aborting"
         )
-    iam_prefixes = map_resources_to_iam_prefixes(all_resource_types)
+    iam_prefixes = map_resources_to_iam_prefixes(
+        all_resource_types, mapped_resource_types
+    )
     logger.info(f"IAM Service Prefixes: {iam_prefixes}")  # type: ignore
 
     return iam_prefixes
@@ -84,4 +92,6 @@ def generate_cf_execution_policy(directory_to_scan: str) -> set[str]:
 
 if __name__ == "__main__":
     directory_to_scan = "/home/bernard/projects/cdk_cf_execution_role/src/cdk.out"  # Change this to your directory
-    iam_service_prefixes = generate_cf_execution_policy(directory_to_scan)
+    iam_service_prefixes = generate_cf_execution_policy(
+        directory_to_scan, RESOURCE_TO_IAM_PREFIX
+    )
