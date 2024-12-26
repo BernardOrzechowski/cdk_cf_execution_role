@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Final
+from typing import Any, Final
 
 from loguru import logger
 
@@ -20,6 +20,17 @@ RESOURCE_TO_IAM_PREFIX: Final[dict[CloudFormationResource, IAMServicePrefix]] = 
     "AWS::SQS::Queue": "sqs",
     # Add more mappings as needed
 }
+
+
+def generate_iam_managed_policy(service_prefixes: set[str]) -> str:
+    """Generate an AWS IAM Managed Policy JSON document with * permission on provided service prefixes."""
+    policy: dict[str, Any] = {"Version": "2012-10-17", "Statement": []}
+
+    for prefix in service_prefixes:
+        statement = {"Effect": "Allow", "Action": f"{prefix}:*", "Resource": "*"}
+        policy["Statement"].append(statement)
+
+    return json.dumps(policy, indent=4)
 
 
 def scan_directory_for_templates(directory: str) -> list[str]:
@@ -70,7 +81,7 @@ def validate_resource_types(
 def generate_cf_execution_policy(
     directory_to_scan: str,
     mapped_resource_types: dict[CloudFormationResource, IAMServicePrefix],
-) -> set[str]:
+) -> str:
     """Main function to scan directory and generate list of IAM service prefixes."""
     cf_template_files = scan_directory_for_templates(directory_to_scan)
     all_resource_types: set[str] = set()
@@ -87,11 +98,16 @@ def generate_cf_execution_policy(
     )
     logger.info(f"IAM Service Prefixes: {iam_prefixes}")  # type: ignore
 
-    return iam_prefixes
+    iam_managed_policy_doc = generate_iam_managed_policy(iam_prefixes)
+
+    return iam_managed_policy_doc
 
 
 if __name__ == "__main__":
     directory_to_scan = "/home/bernard/projects/cdk_cf_execution_role/src/cdk.out"  # Change this to your directory
-    iam_service_prefixes = generate_cf_execution_policy(
+    cf_execution_managed_policy = generate_cf_execution_policy(
         directory_to_scan, RESOURCE_TO_IAM_PREFIX
     )
+
+    logger.info("Policy Document to be used with CDK CloudFormation Execution role:")
+    logger.info(f"{cf_execution_managed_policy}")
