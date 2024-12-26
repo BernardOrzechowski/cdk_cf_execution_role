@@ -10,6 +10,7 @@ packages = [{include = "stacks", from = "src"}]
 python = "3.10.13"
 aws-cdk-lib = "2.133.0"
 pydantic = "2.6.4"
+loguru = "^0.7.3"
 
 
 [build-system]
