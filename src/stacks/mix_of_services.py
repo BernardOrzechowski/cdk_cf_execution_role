@@ -1,5 +1,6 @@
 from aws_cdk import App, Duration, Stack
 from aws_cdk import aws_athena as athena
+from aws_cdk import aws_ec2 as ec2
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_sns as sns
 from aws_cdk import aws_sns_subscriptions as subs
@@ -44,4 +45,13 @@ class VariousServicesExampleStack(Stack):
                 "publishCloudWatchMetricsEnabled": True,
                 "requesterPaysEnabled": False,
             },
+        )
+
+        # added as part of article EC2 Key Pair
+        ec2.CfnKeyPair(
+            self,
+            "ExampleKeyPair",
+            key_name="example-key-pair",
+            key_type="rsa",
+            public_key_material="ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAr...example",
         )

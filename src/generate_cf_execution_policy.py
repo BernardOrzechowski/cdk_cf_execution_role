@@ -18,6 +18,7 @@ RESOURCE_TO_IAM_PREFIX: Final[dict[CloudFormationResource, IAMServicePrefix]] = 
     "AWS::SNS::Subscription": "sns",
     "AWS::SNS::Topic": "sns",
     "AWS::SQS::Queue": "sqs",
+    "AWS::EC2::KeyPair": "ec2",
     # Add more mappings as needed
 }
 
@@ -73,7 +74,7 @@ def validate_resource_types(
     """Validate that all resource types are recognized and mapped to IAM prefixes."""
     unrecognized_resources = resource_types - mapped_resource_types.keys()
     if unrecognized_resources:
-        logger.warning(f"Unrecognized resource types: {unrecognized_resources}")
+        logger.error(f"Unrecognized resource types: {unrecognized_resources}")
         return False
     return True
 
